@@ -1,0 +1,31 @@
+# 开发环境配置
+server:
+ port: 8084
+ address: 127.0.0.1
+
+#  编写开发和测试环境的MySQL数据库环境变量
+MySQL:
+ Host: 127.0.0.1
+ Port: 3306
+ Username: root
+ Password: 20040610
+ Database: realWorld
+ Charset: utf8mb4
+ Config: sslmode=disable TimeZone=Asia/Shanghai
+
+Database: 2025
+
+# 指定运行端口
+App:
+ Port: 8090
+
+# JWT配置
+Jwt:
+ Issuer: 刘兴洪
+ ExpireTime: 70000
+ Secret: 牧牛火链2201
+ NotBefore: 1
+#zap日志管理
+Logs:
+ dir: ./logs
+ layout: "2006-01-02"  # 修改此处，将冒号替换为连字符

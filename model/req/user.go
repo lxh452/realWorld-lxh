@@ -1,0 +1,43 @@
+package req
+
+import "time"
+
+type UserAuth struct {
+	User UserAuthReq `json:"user"`
+}
+
+type UserRegister struct {
+	User UserRegisterReq `json:"user"`
+}
+
+// 验证请求体
+type UserAuthReq struct {
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// 注册请求体
+type UserRegisterReq struct {
+	Email    string `json:"email"`
+	Passwd   string `json:"password"`
+	Username string `json:"username"`
+}
+
+// ModifyUser 更改用户信息的请求体
+type ModifyUser struct {
+	User ModifyUserInfo `json:"user"`
+}
+
+// ModifyUserInfo 更改请求体
+type ModifyUserInfo struct {
+	Email     *string   `json:"email" binding:"omitempty,email"`
+	Username  *string   `json:"username" binding:"omitempty,alphanum"`
+	Bio       *string   `json:"bio" binding:"omitempty"`
+	Image     *string   `json:"image" binding:"omitempty,url"`
+	Password  *string   `json:"password" binding:"omitempty,min=8"`
+	UpdatedAt time.Time `json:"-"`
+}
+
+func (receiver ModifyUserInfo) TableName() string {
+	return "users"
+}
