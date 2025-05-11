@@ -1,6 +1,8 @@
 package req
 
-import "time"
+import (
+	"time"
+)
 
 type UserAuth struct {
 	User UserAuthReq `json:"user"`
@@ -30,6 +32,7 @@ type ModifyUser struct {
 
 // ModifyUserInfo 更改请求体
 type ModifyUserInfo struct {
+	Id        *uint     `json:"-"`
 	Email     *string   `json:"email" binding:"omitempty,email"`
 	Username  *string   `json:"username" binding:"omitempty,alphanum"`
 	Bio       *string   `json:"bio" binding:"omitempty"`

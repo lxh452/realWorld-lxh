@@ -1,6 +1,8 @@
 package req
 
-import "time"
+import (
+	"time"
+)
 
 type CreateArticle struct {
 	Article CreateArticleReq `json:"article"`
@@ -23,4 +25,17 @@ type ModifyArticleInfo struct {
 
 func (u ModifyArticleInfo) TableName() string {
 	return "articles"
+}
+
+// 评论请求体
+type CommentResp struct {
+	Comment commentModel `json:"comment"`
+}
+type commentModel struct {
+	Body string `json:"body"`
+}
+
+type Faviorite struct {
+	ArticleId uint `json:"article_id"`
+	UserId    uint `json:"user_id"`
 }

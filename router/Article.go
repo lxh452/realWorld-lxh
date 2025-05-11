@@ -34,7 +34,21 @@ func (r *ArticleGroup) InitArticleRouters(engine *gin.Engine) {
 	//使用中间件
 	comments.Use()
 	{
-		comments.POST("/:slug/comment")
+		//获取该文章下的所有评论
+		comments.GET("/:slug/comments", api.GetCommentFromArticle)
+		//增加评论
+		comments.POST("/:slug/comments", api.AddcommentToArticle)
+		//删除评论
+		comments.DELETE("/:slug/comments/:id", api.DeleteCommentFromArticle)
+
+	}
+	//喜欢
+	faviorite := engine.Group("/api/articles")
+	//使用中间件
+	faviorite.Use()
+	{
+		faviorite.POST("/:slug/favorite", api.AddArticleIntoFavorite)
+		faviorite.DELETE("/:slug/favorite", api.DeleteArticleFromFavorite)
 
 	}
 

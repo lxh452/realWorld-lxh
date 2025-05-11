@@ -17,7 +17,7 @@ type ArticleService struct{}
 
 // 动态根据提供的字段进行修改查询方式
 // 按条件获取文章列表
-func (article *ArticleService) GetArticlesByConditions(tag string, authorId uint, favorited string, limit string, offset string) ([]resp.ArticleResp, error) {
+func (article *ArticleService) GetArticlesByConditions(tag string, authorId uint, favorited uint, reqid uint, limit string, offset string) ([]resp.ArticleResp, error) {
 	var articles []resp.Articlegorm
 	limitnum, err := strconv.Atoi(limit)
 	if err != nil {
@@ -28,16 +28,22 @@ func (article *ArticleService) GetArticlesByConditions(tag string, authorId uint
 		return nil, err
 	}
 
-	query := global.DB.Model(&resp.Articlegorm{}).Debug().Order("created_at DESC").Limit(limitnum).Offset(offsetnum)
+	query := global.DB.Model(&resp.Articlegorm{}).
+		Select("articles.*, IFNULL(favorites.favorites_count, 0) AS favorites_count, IFNULL(user_favorites.favorited, 0) AS favorited").
+		Joins("LEFT JOIN (SELECT article_id, COUNT(*) AS favorites_count FROM user_article_faviourite GROUP BY article_id) AS favorites ON articles.id = favorites.article_id").
+		Joins("LEFT JOIN (SELECT article_id, COUNT(*) > 0 AS favorited FROM user_article_faviourite WHERE user_id = ? GROUP BY article_id) AS user_favorites ON articles.id = user_favorites.article_id", reqid).
+		Order("articles.created_at DESC").
+		Limit(limitnum).
+		Offset(offsetnum)
 
 	if tag != "" {
-		query = query.Where("tag_list LIKE ?", "%"+tag+"%")
+		query = query.Where("articles.tag_list LIKE ?", "%"+tag+"%")
 	}
 	if authorId > 0 {
-		query = query.Where("author_id = ?", authorId)
+		query = query.Where("articles.author_id = ?", authorId)
 	}
-	if favorited != "" {
-		query = query.Where("favorited_by LIKE ?", "%"+favorited+"%")
+	if favorited > 0 {
+		query = query.Where("articles.id IN (SELECT article_id FROM user_article_faviourite WHERE user_id = ?)", favorited)
 	}
 
 	err = query.Find(&articles).Error
@@ -75,13 +81,19 @@ func (article *ArticleService) GetArticlesByConditions(tag string, authorId uint
 
 // 获取文章信息
 func (article *ArticleService) GetArticleInfo(slug string, reqid uint) (*resp.ArticleResp, error) {
-	fmt.Println(slug, reqid)
+
 	var articleinfo resp.Articlegorm
-	err := global.DB.Model(&resp.Articlegorm{}).Where("title = ?", slug).Scan(&articleinfo).Error
+	// 使用 Raw 方法手动构建 SQL 查询
+	err := global.DB.Model(&resp.Articlegorm{}).
+		Select("articles.*, IFNULL(favorites.favorites_count, 0) AS favorites_count, IFNULL(user_favorites.favorited, 0) AS favorited").
+		Joins("LEFT JOIN (SELECT article_id, COUNT(*) AS favorites_count FROM user_article_faviourite GROUP BY article_id) AS favorites ON articles.id = favorites.article_id").
+		Joins("LEFT JOIN (SELECT article_id, COUNT(*) > 0 AS favorited FROM user_article_faviourite WHERE user_id = ? GROUP BY article_id) AS user_favorites ON articles.id = user_favorites.article_id", reqid).
+		Where("articles.title = ?", slug).
+		Scan(&articleinfo).Error
 	if err != nil {
 		return &resp.ArticleResp{}, err
 	}
-	//调用私有方法获取作者信息
+	// 调用私有方法获取作者信息
 	info := &model.Follower{
 		UserId:     reqid,
 		FollowerId: articleinfo.AuthorId}
@@ -89,7 +101,7 @@ func (article *ArticleService) GetArticleInfo(slug string, reqid uint) (*resp.Ar
 	if err != nil {
 		return nil, err
 	}
-	//赋值
+	// 赋值
 	data := resp.ArticleModel{
 		Slug:           articleinfo.Title,
 		Title:          articleinfo.Title,
@@ -116,8 +128,8 @@ func (article *ArticleService) CreateArticle(req *req.CreateArticleReq, authorid
 		TagList:     req.TagList,
 		AuthorID:    authorid,
 		Description: req.Description,
-		CreateAt:    time.Now(),
-		UpdateAt:    time.Now(),
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 	//处理错误
 	result := global.DB.Create(&data)

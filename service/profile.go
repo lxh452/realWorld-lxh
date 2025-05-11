@@ -18,7 +18,7 @@ type ProfileService struct{}
 func (profile *ProfileService) GetTagetUserInfo(follower *model.Follower) (*resp.ProfileResp, error) {
 	var resp resp.ProfileResp
 	err := global.DB.Table("users u").
-		Select(`u.username,u.bio,u.image,CASE WHEN f.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS following`).Debug().
+		Select(`u.username,u.bio,u.image,CASE WHEN f.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS following`).
 		Joins(`LEFT JOIN followers f ON f.user_id = ? AND f.follower_id = u.id AND f.deleted_at IS NULL`, follower.UserId). // 当前用户（关注发起者）
 		Where("u.id = ?", follower.FollowerId).                                                                             // 目标用户
 		Where("u.deleted_at IS NULL").

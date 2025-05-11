@@ -16,11 +16,16 @@ func GetArticles(c *gin.Context) {
 	offset := c.DefaultQuery("offset", "0") // 偏移/跳过文章数量，默认为0
 	tag := c.Query("tag")                   // 按标签过滤
 	author := c.Query("author")             // 按作者筛选
-	favorited := c.Query("favorited")       // 用户收藏
+	favorited := c.Query("favorited")       // 指定用户的收藏
 	//根据用户名查找id
-
+	//获取自身id
+	claims, err := utils.GetClaims(c)
+	if err != nil {
+		resp.FailWithMessage(err.Error(), c)
+		return
+	}
 	articles := service.ArticleServiceApp
-	conditions, err := articles.GetArticlesByConditions(tag, getTargetId(author), favorited, limit, offset)
+	conditions, err := articles.GetArticlesByConditions(tag, getTargetId(author), getTargetId(favorited), claims.Id, limit, offset)
 	if err != nil {
 		return
 	}

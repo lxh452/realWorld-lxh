@@ -80,7 +80,6 @@ func UserRegisterApi(c *gin.Context) {
 		return
 	}
 	baseclaim := model.BaseClaims{
-		Id:       register.User.Id,
 		Username: register.User.Username,
 		Email:    register.User.Email,
 	}
@@ -149,6 +148,7 @@ func PutUserInfo(c *gin.Context) {
 	//如果修改了邮箱和用户名需要重新生成token
 	if user.User.Email != nil || user.User.Email != nil {
 		baseclaim := model.BaseClaims{
+			Id:       *user.User.Id,
 			Username: *user.User.Username,
 			Email:    *user.User.Email,
 		}
