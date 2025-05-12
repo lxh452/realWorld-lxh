@@ -23,8 +23,8 @@ func (u *UserGroup) InitUserRouters(engine *gin.Engine) {
 	user_auth.Use(middleware.JwtMiddleware())
 	{
 		//获取当前用户
-		user_auth.GET("/user", api.GetUserInfo)
+		user_auth.GET("/user", api.GetUserInfoApi)
 		//更新用户
-		user_auth.PUT("/user", api.PutUserInfo)
+		user_auth.PUT("/user", api.PutUserInfoApi)
 	}
 }

@@ -2,13 +2,15 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"realWorld/global"
 	"realWorld/model"
 	"realWorld/model/resp"
 	"realWorld/service"
 	"realWorld/utils"
 )
 
-func GetUserProfile(c *gin.Context) {
+func GetUserProfileApi(c *gin.Context) {
 	//获取搜索用户名字
 	target := c.Param("username")
 
@@ -32,6 +34,8 @@ func GetUserProfile(c *gin.Context) {
 	userInfo := service.ProfileServiceApp
 	info, err := userInfo.GetTagetUserInfo(data)
 	if err != nil {
+		//写入日志
+		global.Logger.Warn("关注信息获取"+err.Error(), zap.String("service", "getrelationship"), zap.Int("port", global.CONFIG.Server.Port))
 		resp.FailWithMessage(err.Error(), c)
 		return
 	}
@@ -39,7 +43,7 @@ func GetUserProfile(c *gin.Context) {
 
 }
 
-func ProfileFollow(c *gin.Context) {
+func ProfileFollowApi(c *gin.Context) {
 	//获取搜索用户名字
 	target := c.Param("username")
 
@@ -62,12 +66,14 @@ func ProfileFollow(c *gin.Context) {
 	user, err := userInfo.FollowUser(data)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
+		//写入日志
+		global.Logger.Warn("关注失败"+err.Error(), zap.String("service", "ProfileFollowApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 	resp.OkWithData(user, c)
 }
 
-func ProfileUnFollow(c *gin.Context) {
+func ProfileUnFollowApi(c *gin.Context) {
 	//获取搜索用户名字
 	target := c.Param("username")
 
@@ -89,6 +95,8 @@ func ProfileUnFollow(c *gin.Context) {
 	user, err := userInfo.UnFollowUser(data)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
+		//写入日志
+		global.Logger.Warn("取消关注失败"+err.Error(), zap.String("service", "ProfileUnFollowApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 	resp.OkWithData(user, c)

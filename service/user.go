@@ -34,13 +34,14 @@ func (u *UserService) Register(req req.UserRegisterReq) (*resp.UserResp, error) 
 		return nil, global.ErrUserAlreadyExists
 	}
 	user.Username = req.Username
-	user.Password = req.Passwd
+	user.Password = req.Password
 	user.Email = req.Email
 	err = global.DB.Create(&user).Error
 	if err != nil {
 		return nil, err
 	}
 	var data resp.UserResp
+	data.User.Username = user.Username
 	data.User.Bio = user.Bio
 	data.User.Image = user.Image
 	data.User.Email = user.Email

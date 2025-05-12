@@ -13,8 +13,8 @@ func (r *ProfilesGroup) InitProfileRouters(engine *gin.Engine) {
 	profile := engine.Group("/api/profiles")
 	profile.Use(middleware.JwtMiddleware())
 	{
-		profile.GET("/:username", api.GetUserProfile)
-		profile.POST("/:username/follow", api.ProfileFollow)
-		profile.DELETE("/:username/follow", api.ProfileUnFollow)
+		profile.GET("/:username", api.GetUserProfileApi)
+		profile.POST("/:username/follow", api.ProfileFollowApi)
+		profile.DELETE("/:username/follow", api.ProfileUnFollowApi)
 	}
 }

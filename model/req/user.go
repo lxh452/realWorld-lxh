@@ -14,15 +14,15 @@ type UserRegister struct {
 
 // 验证请求体
 type UserAuthReq struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6,max=12"`
 }
 
 // 注册请求体
 type UserRegisterReq struct {
-	Email    string `json:"email"`
-	Passwd   string `json:"password"`
-	Username string `json:"username"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6,max=12"`
+	Username string `json:"username" binding:"required,min=6,max=12"`
 }
 
 // ModifyUser 更改用户信息的请求体
@@ -34,10 +34,10 @@ type ModifyUser struct {
 type ModifyUserInfo struct {
 	Id        *uint     `json:"-"`
 	Email     *string   `json:"email" binding:"omitempty,email"`
-	Username  *string   `json:"username" binding:"omitempty,alphanum"`
+	Username  *string   `json:"username" binding:"omitempty,min=6,max=12"`
 	Bio       *string   `json:"bio" binding:"omitempty"`
 	Image     *string   `json:"image" binding:"omitempty,url"`
-	Password  *string   `json:"password" binding:"omitempty,min=8"`
+	Password  *string   `json:"password" binding:"omitempty,min=6,max=12"`
 	UpdatedAt time.Time `json:"-"`
 }
 

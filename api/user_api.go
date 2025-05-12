@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"log"
+	"go.uber.org/zap"
+	"realWorld/global"
+	"realWorld/middleware"
 	"realWorld/model"
 	"realWorld/model/req"
 	"realWorld/model/resp"
@@ -18,8 +20,7 @@ func UserLoginApi(c *gin.Context) {
 	err := c.ShouldBindJSON(&userReq)
 	fmt.Println(userReq)
 	if err != nil {
-		log.Println("绑定请求体失败", err.Error())
-		resp.FailWithMessage(err.Error(), c)
+		resp.FailWithMessage(utils.Translate(err), c)
 		return
 	}
 	//排除postman的接口错误
@@ -29,12 +30,15 @@ func UserLoginApi(c *gin.Context) {
 	}
 	//合法性认证
 	//处理业务
+	userReq.User.Password = middleware.Md5Decode(userReq.User.Password)
 	//创建一个实体类
 	userModel := service.UserServiceApp
 	login, err := userModel.Login(userReq.User)
 	if err != nil {
-		log.Println(err.Error())
 		resp.FailWithMessage(err.Error(), c)
+
+		//写入日志
+		global.Logger.Warn("登录失败"+err.Error(), zap.String("service", "login"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 	baseclaim := model.BaseClaims{
@@ -49,6 +53,9 @@ func UserLoginApi(c *gin.Context) {
 	token, err := genJwt.GenerateToken(&tokenstr)
 	if err != nil {
 		resp.FailWithMessage("token生成错误", c)
+
+		//写入日志
+		global.Logger.Warn("token生成失败"+err.Error(), zap.String("service", "gentoken"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 	fmt.Println(token)
@@ -62,21 +69,24 @@ func UserRegisterApi(c *gin.Context) {
 	var userReq req.UserRegister
 	err := c.ShouldBindJSON(&userReq)
 	if err != nil {
-		log.Println("绑定请求体失败", err.Error())
-		resp.FailWithMessage(err.Error(), c)
+		resp.FailWithMessage(utils.Translate(err), c)
 		return
 	}
-	if userReq.User.Email == "{{EMAIL}}" || userReq.User.Passwd == "{{PASSWORD}}" || userReq.User.Username == "{{USERNAME}}" {
+	if userReq.User.Email == "{{EMAIL}}" || userReq.User.Password == "{{PASSWORD}}" || userReq.User.Username == "{{USERNAME}}" {
 		resp.FailWithMessage("传值为空", c)
 		return
 	}
 	//合法性认证
+	//密码加入随机种子并加密 todo
+	userReq.User.Password = middleware.Md5Decode(userReq.User.Password)
+
 	//处理业务
 	userModel := service.UserServiceApp
 	register, err := userModel.Register(userReq.User)
 	if err != nil {
-		log.Println(err.Error())
 		resp.FailWithMessage(err.Error(), c)
+		//写入日志
+		global.Logger.Warn("注册失败"+err.Error(), zap.String("service", "register"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 	baseclaim := model.BaseClaims{
@@ -90,6 +100,8 @@ func UserRegisterApi(c *gin.Context) {
 	token, err := genJwt.GenerateToken(&tokenstr)
 	if err != nil {
 		resp.FailWithMessage("token生成错误", c)
+		//写入日志
+		global.Logger.Warn("token生成失败"+err.Error(), zap.String("service", "gentoken"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 	register.User.Token = token
@@ -98,7 +110,7 @@ func UserRegisterApi(c *gin.Context) {
 }
 
 // 获取当前用户
-func GetUserInfo(c *gin.Context) {
+func GetUserInfoApi(c *gin.Context) {
 	//	从token中获取信息
 	claims, err := utils.GetClaims(c)
 	if err != nil {
@@ -112,6 +124,8 @@ func GetUserInfo(c *gin.Context) {
 	info, err := userModel.GetUserInfo(claims.Username)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
+		//写入日志
+		global.Logger.Warn("获取用户信息"+err.Error(), zap.String("service", "getuserinfo"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 
@@ -119,7 +133,7 @@ func GetUserInfo(c *gin.Context) {
 }
 
 // 更改用户的个人信息
-func PutUserInfo(c *gin.Context) {
+func PutUserInfoApi(c *gin.Context) {
 	//根据token获取用户信息
 	claims, err := utils.GetClaims(c)
 	if err != nil {
@@ -146,7 +160,7 @@ func PutUserInfo(c *gin.Context) {
 	}
 
 	//如果修改了邮箱和用户名需要重新生成token
-	if user.User.Email != nil || user.User.Email != nil {
+	if user.User.Username != nil || user.User.Email != nil {
 		baseclaim := model.BaseClaims{
 			Id:       *user.User.Id,
 			Username: *user.User.Username,
@@ -157,6 +171,8 @@ func PutUserInfo(c *gin.Context) {
 		//生成token
 		token, err := genJwt.GenerateToken(&tokenstr)
 		if err != nil {
+			//写入日志
+			global.Logger.Warn("更新数据失败"+err.Error(), zap.String("service", "putuserinfo"), zap.Int("port", global.CONFIG.Server.Port))
 			resp.FailWithMessage("token生成错误", c)
 			return
 		}

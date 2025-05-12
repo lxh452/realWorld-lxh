@@ -53,7 +53,6 @@ func CutterWithDirector(director string) CutterOption {
 }
 
 func (c *Cutter) Write(bytes []byte) (n int, err error) {
-	fmt.Println("正在写入")
 	c.mutex.Lock()
 	defer func() {
 		if c.file != nil {

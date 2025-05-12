@@ -11,5 +11,4 @@ type User struct {
 	Bio      string
 	Image    *string
 	Article  []Article `gorm:"many2many:user_article_faviourite"`
-	//Follows  []User    `gorm:"many2many:user_follows;joinForeignKey:UserID;joinReferences:FollowID"`
 }
