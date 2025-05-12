@@ -21,6 +21,13 @@ type LoginResponse struct {
 	User UserResp `json:"user"`
 }
 
+type ErrorRespone struct {
+	Data Errors `json:"errors"`
+}
+type Errors struct {
+	Body []string `json:"body"`
+}
+
 const (
 	ERROR   = 500
 	SUCCESS = 200
@@ -32,6 +39,15 @@ func Result(code int, data interface{}, msg string, c *gin.Context) {
 		code,
 		data,
 		msg,
+	})
+}
+
+func errorsResp(msg string, c *gin.Context) {
+	// 开始时间
+	var err Errors
+	err.Body = append(err.Body, msg)
+	c.JSON(http.StatusOK, ErrorRespone{
+		Data: err,
 	})
 }
 
@@ -56,7 +72,7 @@ func Fail(c *gin.Context) {
 }
 
 func FailWithMessage(message string, c *gin.Context) {
-	Result(ERROR, map[string]interface{}{}, message, c)
+	errorsResp(message, c)
 }
 
 func NoAuth(message string, c *gin.Context) {

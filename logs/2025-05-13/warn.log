@@ -1,0 +1,19 @@
+{"level":"warn","ts":1747065749.1536746,"msg":"在文章添加评论Error 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`realworld`.`comments`, CONSTRAINT `fk_comments_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`))","service":"AddcommentToArticleApi","port":3000}
+{"level":"warn","ts":1747065756.4354823,"msg":"在文章添加评论Error 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`realworld`.`comments`, CONSTRAINT `fk_comments_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`))","service":"AddcommentToArticleApi","port":3000}
+{"level":"warn","ts":1747065887.3883712,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065888.797731,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065896.1117811,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065897.4143617,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065898.8464074,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065899.9042928,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065900.8523355,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065901.7936819,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065902.9544792,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065904.0525017,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065960.1580038,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065962.8593817,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747065979.6491973,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747066016.6610708,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747066017.8134286,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747066019.3400087,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747066045.1788325,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}

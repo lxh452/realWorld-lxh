@@ -22,6 +22,8 @@ func main() {
 		}
 	}()
 	initialize.MustLoadGorm()
+	initialize.InitRedis()
+	defer initialize.InitRedis()
 	initialize.AutoMigrate(global.DB)
 	initialize.MustLoadZap()
 	initialize.MustRunWindowServer()

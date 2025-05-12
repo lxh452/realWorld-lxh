@@ -1,76 +1,175 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"realWorld/global"
 	"realWorld/model/req"
 	"realWorld/model/resp"
 	"realWorld/service"
 	"realWorld/utils"
+	"time"
 )
 
 // 获取所有标签
 func GetTagsApi(c *gin.Context) {
-	Tag := service.TagsServiceApp
-	tags, err := Tag.GetAllTags()
-	if err != nil {
-		resp.FailWithMessage(err.Error(), c)
-		//写入日志
-		global.Logger.Warn("获取标签列表"+err.Error(), zap.String("service", "GetTagsApi"), zap.Int("port", global.CONFIG.Server.Port))
+	// 尝试从 Redis 缓存中获取标签
+	cacheData, err := global.Redis.Get(context.TODO(), "tags").Bytes() // 获取字节数据
+	if err == nil {
+		// 缓存命中，反序列化缓存数据
+		var tags resp.TagResp
+		if err := json.Unmarshal(cacheData, &tags); err != nil {
+			resp.FailWithMessage("缓存数据格式错误", c)
+			global.Logger.Warn("缓存数据格式错误", zap.Error(err), zap.String("service", "GetTagsApi"), zap.Int("port", global.CONFIG.Server.Port))
+			return
+		}
+		resp.OkWithData(tags, c)
+		return
+	} else if err != redis.Nil {
+		// Redis 错误，记录日志并返回错误
+		resp.FailWithMessage("缓存获取失败", c)
+		global.Logger.Warn("缓存获取失败", zap.Error(err), zap.String("service", "GetTagsApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
+
+	// 缓存未命中，从数据库中获取标签
+	tagService := service.TagsServiceApp
+	tags, err := tagService.GetAllTags()
+	if err != nil {
+		resp.FailWithMessage(err.Error(), c)
+		global.Logger.Warn("获取标签列表失败", zap.Error(err), zap.String("service", "GetTagsApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 将获取到的标签存储到 Redis 缓存中
+	cacheData, err = json.Marshal(tags)
+	if err != nil {
+		resp.FailWithMessage("缓存数据序列化失败", c)
+		global.Logger.Warn("缓存数据序列化失败", zap.Error(err), zap.String("service", "GetTagsApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+	if _, err := global.Redis.Set(context.TODO(), "tags", cacheData, time.Minute*30).Result(); err != nil {
+		resp.FailWithMessage("缓存存储失败", c)
+		global.Logger.Warn("缓存存储失败", zap.Error(err), zap.String("service", "GetTagsApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 返回标签数据
 	resp.OkWithData(tags, c)
 }
 
 // 按条件获取文章列表
 func GetArticlesApi(c *gin.Context) {
-	limit := c.DefaultQuery("limit", "20")  // 限制文章数量，默认为20
-	offset := c.DefaultQuery("offset", "0") // 偏移/跳过文章数量，默认为0
-	tag := c.Query("tag")                   // 按标签过滤
-	author := c.Query("author")             // 按作者筛选
-	favorited := c.Query("favorited")       // 指定用户的收藏
-	//根据用户名查找id
-	//获取自身id
+	limit := c.DefaultQuery("limit", "20")
+	offset := c.DefaultQuery("offset", "0")
+	tag := c.Query("tag")
+	author := c.Query("author")
+	favorited := c.Query("favorited")
+
+	cacheKey := fmt.Sprintf("articles:tag:%s:author:%s:favorited:%s:limit:%s:offset:%s", tag, author, favorited, limit, offset)
+	cacheData, err := global.Redis.Get(context.TODO(), cacheKey).Bytes()
+	if err == nil {
+		// 缓存命中，反序列化缓存数据
+		var articles []resp.ArticleResp
+		if err := json.Unmarshal(cacheData, &articles); err != nil {
+			resp.FailWithMessage("缓存数据格式错误", c)
+			global.Logger.Warn("缓存数据格式错误", zap.Error(err), zap.String("service", "GetArticlesApi"), zap.Int("port", global.CONFIG.Server.Port))
+			return
+		}
+		resp.OkWithData(articles, c)
+		return
+	} else if err != redis.Nil {
+		// Redis 错误，记录日志并返回错误
+		resp.FailWithMessage("缓存获取失败", c)
+		global.Logger.Warn("缓存获取失败", zap.Error(err), zap.String("service", "GetArticlesApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 缓存未命中，从数据库中获取文章列表
 	claims, err := utils.GetClaims(c)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
 		return
 	}
-	articles := service.ArticleServiceApp
-	conditions, err := articles.GetArticlesByConditions(tag, getTargetId(author), getTargetId(favorited), claims.Id, limit, offset)
-	if err != nil {
-		return
-	}
+	articles, err := service.ArticleServiceApp.GetArticlesByConditions(tag, getTargetId(author), getTargetId(favorited), claims.Id, limit, offset)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
-		//写入日志
-		global.Logger.Warn("按条件获取文章列表"+err.Error(), zap.String("service", "GetArticlesApi"), zap.Int("port", global.CONFIG.Server.Port))
+		global.Logger.Warn("按条件获取文章列表失败", zap.Error(err), zap.String("service", "GetArticlesApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
-	resp.OkWithData(conditions, c)
+
+	// 将获取到的文章列表存储到 Redis 缓存中
+	cacheData, err = json.Marshal(articles)
+	if err != nil {
+		resp.FailWithMessage("缓存数据序列化失败", c)
+		global.Logger.Warn("缓存数据序列化失败", zap.Error(err), zap.String("service", "GetArticlesApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+	if _, err := global.Redis.Set(context.TODO(), cacheKey, cacheData, time.Minute*30).Result(); err != nil {
+		resp.FailWithMessage("缓存存储失败", c)
+		global.Logger.Warn("缓存存储失败", zap.Error(err), zap.String("service", "GetArticlesApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 返回文章列表
+	resp.OkWithData(articles, c)
 }
 
 // 获取单个文章
 func GetArticleApi(c *gin.Context) {
 	slug := c.Param("slug")
-	//从token中获取数据
+	cacheKey := fmt.Sprintf("article:%s", slug)
+	cacheData, err := global.Redis.Get(context.TODO(), cacheKey).Bytes()
+	if err == nil {
+		// 缓存命中，反序列化缓存数据
+		var article resp.ArticleResp
+		if err := json.Unmarshal(cacheData, &article); err != nil {
+			resp.FailWithMessage("缓存数据格式错误", c)
+			global.Logger.Warn("缓存数据格式错误", zap.Error(err), zap.String("service", "GetArticleApi"), zap.Int("port", global.CONFIG.Server.Port))
+			return
+		}
+		resp.OkWithData(article, c)
+		return
+	} else if err != redis.Nil {
+		// Redis 错误，记录日志并返回错误
+		resp.FailWithMessage("缓存获取失败", c)
+		global.Logger.Warn("缓存获取失败", zap.Error(err), zap.String("service", "GetArticleApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 缓存未命中，从数据库中获取文章
 	claims, err := utils.GetClaims(c)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
 		return
 	}
-	article := service.ArticleServiceApp
-	info, err := article.GetArticleInfo(slug, claims.Id)
+	article, err := service.ArticleServiceApp.GetArticleInfo(slug, claims.Id)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
-		//写入日志
-		global.Logger.Warn("获取单个文章"+err.Error(), zap.String("service", "GetArticleApi"), zap.Int("port", global.CONFIG.Server.Port))
+		global.Logger.Warn("获取单个文章失败", zap.Error(err), zap.String("service", "GetArticleApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
-	resp.OkWithData(info, c)
+
+	// 将获取到的文章存储到 Redis 缓存中
+	cacheData, err = json.Marshal(article)
+	if err != nil {
+		resp.FailWithMessage("缓存数据序列化失败", c)
+		global.Logger.Warn("缓存数据序列化失败", zap.Error(err), zap.String("service", "GetArticleApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+	if _, err := global.Redis.Set(context.TODO(), cacheKey, cacheData, time.Minute*30).Result(); err != nil {
+		resp.FailWithMessage("缓存存储失败", c)
+		global.Logger.Warn("缓存存储失败", zap.Error(err), zap.String("service", "GetArticleApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 返回文章数据
+	resp.OkWithData(article, c)
 }
 
 // 创建文章

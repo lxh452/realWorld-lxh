@@ -16,9 +16,13 @@ MySQL:
 #s如果部署失败或者版本低，使用linux虚拟机下的redis-1
 #192.168.163.156
 Redis:
- Host: 127.0.0.1
- Port: 6379
- Database: 0
+ host: 127.0.0.1
+ port: 6379
+ password: ""
+ db: 0
+ pool_size: 30
+ min_idle_conns: 5
+ idle_timeout: 300s
 
 
 # 指定运行端口

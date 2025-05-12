@@ -57,7 +57,7 @@ func (profile *ProfileService) UnFollowUser(follower *model.Follower) (*resp.Pro
 	if err != nil {
 		return &resp.ProfileResp{}, errors.New("您还没关注他")
 	}
-	//创建该关系表
+	//删除
 	err = global.DB.Delete(&existingFollower).Error
 	if err != nil {
 		return &resp.ProfileResp{}, errors.New("取消关注失败")

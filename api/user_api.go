@@ -1,9 +1,12 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"realWorld/global"
 	"realWorld/middleware"
@@ -12,6 +15,7 @@ import (
 	"realWorld/model/resp"
 	"realWorld/service"
 	"realWorld/utils"
+	"time"
 )
 
 func UserLoginApi(c *gin.Context) {
@@ -112,24 +116,55 @@ func UserRegisterApi(c *gin.Context) {
 
 // 获取当前用户
 func GetUserInfoApi(c *gin.Context) {
-	//	从token中获取信息
 	claims, err := utils.GetClaims(c)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
 		return
 	}
-	//	先从redis中查找我的信息
 
-	//	从mysql中查找
-	userModel := service.UserServiceApp
-	info, err := userModel.GetUserInfo(claims.Username)
-	if err != nil {
-		resp.FailWithMessage(err.Error(), c)
-		//写入日志
-		global.Logger.Warn("获取用户信息"+err.Error(), zap.String("service", "getuserinfo"), zap.Int("port", global.CONFIG.Server.Port))
+	// 尝试从 Redis 缓存中获取用户信息
+	cacheKey := fmt.Sprintf("user:%s", claims.Username)
+	cacheData, err := global.Redis.Get(context.TODO(), cacheKey).Bytes()
+	if err == nil {
+		// 缓存命中，反序列化缓存数据
+		var userInfo resp.UserResp
+		if err := json.Unmarshal(cacheData, &userInfo); err != nil {
+			resp.FailWithMessage("缓存数据格式错误", c)
+			global.Logger.Warn("缓存数据格式错误", zap.Error(err), zap.String("service", "GetUserInfoApi"), zap.Int("port", global.CONFIG.Server.Port))
+			return
+		}
+		resp.OkWithData(userInfo, c)
+		return
+	} else if err != redis.Nil {
+		// Redis 错误，记录日志并返回错误
+		resp.FailWithMessage("缓存获取失败", c)
+		global.Logger.Warn("缓存获取失败", zap.Error(err), zap.String("service", "GetUserInfoApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
 
+	// 缓存未命中，从数据库中获取用户信息
+	userService := service.UserServiceApp
+	info, err := userService.GetUserInfo(claims.Username)
+	if err != nil {
+		resp.FailWithMessage(err.Error(), c)
+		global.Logger.Warn("获取用户信息失败", zap.Error(err), zap.String("service", "GetUserInfoApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 将获取到的用户信息存储到 Redis 缓存中
+	cacheData, err = json.Marshal(info)
+	if err != nil {
+		resp.FailWithMessage("缓存数据序列化失败", c)
+		global.Logger.Warn("缓存数据序列化失败", zap.Error(err), zap.String("service", "GetUserInfoApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+	if _, err := global.Redis.Set(context.TODO(), cacheKey, cacheData, time.Hour).Result(); err != nil {
+		resp.FailWithMessage("缓存存储失败", c)
+		global.Logger.Warn("缓存存储失败", zap.Error(err), zap.String("service", "GetUserInfoApi"), zap.Int("port", global.CONFIG.Server.Port))
+		return
+	}
+
+	// 返回用户信息
 	resp.OkWithData(info, c)
 }
 

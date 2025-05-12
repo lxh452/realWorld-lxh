@@ -2,3 +2,9 @@
 {"level":"warn","ts":1747051933.6679597,"msg":"登录失败用户不存在","service":"login","port":3000}
 {"level":"warn","ts":1747051960.0049706,"msg":"注册失败用户已存在","service":"register","port":3000}
 {"level":"warn","ts":1747052887.1278744,"msg":"注册失败用户已存在","service":"register","port":3000}
+{"level":"warn","ts":1747059098.9513674,"msg":"登录失败用户不存在","service":"login","port":3000}
+{"level":"warn","ts":1747059110.5753472,"msg":"登录失败用户不存在","service":"login","port":3000}
+{"level":"warn","ts":1747060691.2437887,"msg":"登录失败用户不存在","service":"login","port":3000}
+{"level":"warn","ts":1747060703.298278,"msg":"登录失败用户不存在","service":"login","port":3000}
+{"level":"warn","ts":1747060726.385288,"msg":"登录失败用户不存在","service":"login","port":3000}
+{"level":"warn","ts":1747063674.823236,"msg":"关注失败您已关注该用户","service":"ProfileFollowApi","port":3000}

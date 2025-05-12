@@ -5,4 +5,5 @@ type Config struct {
 	Server Server
 	Jwt    Jwt
 	Logs   Logs
+	Redis  Redis
 }

@@ -8,9 +8,9 @@ require (
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.26.0
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/redis/go-redis/v9 v9.8.0
-	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/mysql v1.5.7
