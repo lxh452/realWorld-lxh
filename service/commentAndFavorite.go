@@ -7,6 +7,7 @@ import (
 	"realWorld/model"
 	"realWorld/model/req"
 	"realWorld/model/resp"
+	"strconv"
 	"time"
 )
 
@@ -152,4 +153,59 @@ func (faviorite ArticleService) DeleteArticleToFaviorite(slug string, userId uin
 		return err
 	}
 	return nil
+}
+
+// 获取关注用户的文章列表
+func (article *ArticleService) GetFollowedArticles(reqid uint, limit string, offset string) ([]resp.ArticleResp, error) {
+	var articles []resp.Articlegorm
+	limitnum, err := strconv.Atoi(limit)
+	if err != nil {
+		return nil, err
+	}
+	offsetnum, err := strconv.Atoi(offset)
+	if err != nil {
+		return nil, err
+	}
+
+	// 查询关注用户的文章
+	query := global.DB.Model(&resp.Articlegorm{}).
+		Select("articles.*, IFNULL(favorites.favorites_count, 0) AS favorites_count, IFNULL(user_favorites.favorited, 0) AS favorited").
+		Joins("LEFT JOIN (SELECT article_id, COUNT(*) AS favorites_count FROM user_article_faviourite GROUP BY article_id) AS favorites ON articles.id = favorites.article_id").
+		Joins("LEFT JOIN (SELECT article_id, COUNT(*) > 0 AS favorited FROM user_article_faviourite WHERE user_id = ? GROUP BY article_id) AS user_favorites ON articles.id = user_favorites.article_id", reqid).
+		Joins("INNER JOIN followers f ON f.follower_id = articles.author_id").
+		Where("f.user_id = ? AND f.deleted_at IS NULL", reqid).
+		Order("articles.created_at DESC").
+		Limit(limitnum).
+		Offset(offsetnum)
+
+	err = query.Find(&articles).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 将查询结果转换为嵌套了作者信息的结构体
+	var articleResps []resp.ArticleResp
+	for _, articleinfo := range articles {
+		authorInfo, err := getAuthorinfo(&model.Follower{UserId: reqid, FollowerId: articleinfo.AuthorId})
+		if err != nil {
+			return nil, err
+		}
+		articleResp := resp.ArticleResp{
+			Article: resp.ArticleModel{
+				Slug:           articleinfo.Title,
+				Title:          articleinfo.Title,
+				Description:    articleinfo.Description,
+				Body:           articleinfo.Body,
+				TagList:        articleinfo.TagList,
+				CreatedAt:      articleinfo.CreatedAt,
+				UpdatedAt:      articleinfo.UpdatedAt,
+				Favorited:      articleinfo.Favorited,
+				FavoritesCount: articleinfo.FavoritesCount,
+				Author:         *authorInfo,
+			},
+		}
+		articleResps = append(articleResps, articleResp)
+	}
+
+	return articleResps, nil
 }

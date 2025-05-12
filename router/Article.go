@@ -28,7 +28,12 @@ func (r *ArticleGroup) InitArticleRouters(engine *gin.Engine) {
 		Article.PUT("/:slug", api.UpdateArticleApi)
 		//删除文章
 		Article.DELETE("/:slug", api.DeleteArticleApi)
+
+		//提要文章
+		Article.GET("/feed", api.GetArticleFeedApi)
 	}
+
+	//无需使用中间件
 	Article_NoAuth := engine.Group("/api/articles")
 	{
 		//按条件获取文章
@@ -49,6 +54,7 @@ func (r *ArticleGroup) InitArticleRouters(engine *gin.Engine) {
 		comments.DELETE("/:slug/comments/:id", api.DeleteCommentFromArticleApi)
 
 	}
+
 	//喜欢
 	faviorite := engine.Group("/api/articles")
 	//使用中间件

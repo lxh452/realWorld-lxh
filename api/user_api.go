@@ -30,7 +30,8 @@ func UserLoginApi(c *gin.Context) {
 	}
 	//合法性认证
 	//处理业务
-	userReq.User.Password = middleware.Md5Decode(userReq.User.Password)
+	//todo
+	//userReq.User.Password = middleware.Md5Decode(userReq.User.Password)
 	//创建一个实体类
 	userModel := service.UserServiceApp
 	login, err := userModel.Login(userReq.User)
@@ -133,54 +134,66 @@ func GetUserInfoApi(c *gin.Context) {
 }
 
 // 更改用户的个人信息
+// 更改用户的个人信息
 func PutUserInfoApi(c *gin.Context) {
-	//根据token获取用户信息
+	// 根据token获取用户信息
 	claims, err := utils.GetClaims(c)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
 		return
 	}
+
+	// 绑定请求数据
 	var user req.ModifyUser
 	if err = c.ShouldBindJSON(&user); err != nil {
 		resp.FailWithMessage(err.Error(), c)
-		fmt.Println(user)
 		return
 	}
 
+	// 验证请求数据
 	validate := validator.New()
 	if err = validate.Struct(user); err != nil {
 		resp.FailWithMessage(err.Error(), c)
 		return
 	}
+
+	// 调用服务层更新用户信息
 	userModel := service.UserServiceApp
-	_, err = userModel.ModifyUserInfo(&user.User, claims.Username)
+	updatedUser, err := userModel.ModifyUserInfo(&user.User, claims.Username)
 	if err != nil {
 		resp.FailWithMessage(utils.Translate(err), c)
 		return
 	}
 
-	//如果修改了邮箱和用户名需要重新生成token
-	if user.User.Username != nil || user.User.Email != nil {
-		baseclaim := model.BaseClaims{
-			Id:       *user.User.Id,
-			Username: *user.User.Username,
-			Email:    *user.User.Email,
-		}
-		genJwt := utils.NewJwt()
-		tokenstr := genJwt.CreateClaims(baseclaim)
-		//生成token
-		token, err := genJwt.GenerateToken(&tokenstr)
+	// 检查是否需要重新生成token
+	if needsNewToken(updatedUser, claims) {
+		token, err := generateNewToken(*updatedUser)
 		if err != nil {
-			//写入日志
-			global.Logger.Warn("更新数据失败"+err.Error(), zap.String("service", "putuserinfo"), zap.Int("port", global.CONFIG.Server.Port))
+			global.Logger.Warn("更新数据失败", zap.Error(err), zap.String("service", "putuserinfo"), zap.Int("port", global.CONFIG.Server.Port))
 			resp.FailWithMessage("token生成错误", c)
 			return
 		}
-
-		//成功返回结果
 		resp.OkWithData(token, c)
 		return
 	}
-	resp.OkWithMessage("更新成功", c)
 
+	// 更新成功，无需重新生成token
+	resp.OkWithMessage("更新成功", c)
+}
+
+// 检查是否需要重新生成token
+func needsNewToken(updatedUser *resp.UserResp, claims *model.GoShopClaims) bool {
+	return updatedUser.User.Email != claims.Email || updatedUser.User.Username != claims.Username
+}
+
+// 生成新的token
+func generateNewToken(user resp.UserResp) (string, error) {
+	baseClaim := model.BaseClaims{
+		Id:       user.User.Id,
+		Username: user.User.Username,
+		Email:    user.User.Email,
+	}
+	genJwt := utils.NewJwt()
+	tokenStr := genJwt.CreateClaims(baseClaim)
+	return genJwt.GenerateToken(&tokenStr)
 }

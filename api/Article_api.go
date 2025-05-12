@@ -163,3 +163,21 @@ func DeleteArticleApi(c *gin.Context) {
 	}
 	resp.OkWithMessage("删除成功", c)
 }
+
+// 获取提要文章
+func GetArticleFeedApi(c *gin.Context) {
+	claims, err := utils.GetClaims(c)
+	limit := c.DefaultQuery("limit", "20")  // 限制文章数量，默认为20
+	offset := c.DefaultQuery("offset", "0") // 偏移/跳过文章数量，默认为0
+	if err != nil {
+		resp.FailWithMessage(err.Error(), c)
+		return
+	}
+	articles := service.ArticleServiceApp
+	followedArticles, err := articles.GetFollowedArticles(claims.Id, limit, offset)
+	if err != nil {
+		resp.FailWithMessage(err.Error(), c)
+		return
+	}
+	resp.OkWithData(followedArticles, c)
+}
