@@ -60,11 +60,10 @@ func (u *UserService) GetUserInfo(req string) (*resp.UserResp, error) {
 
 // 更改用户信息
 func (u *UserService) ModifyUserInfo(req *req.ModifyUserInfo, reqName string) (*resp.UserResp, error) {
-	var user resp.UserResp
 	req.UpdatedAt = time.Now()
 	result := global.DB.Debug().Where("username = ?", reqName).Updates(req)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return &user, nil
+	return u.GetUserInfo(reqName)
 }

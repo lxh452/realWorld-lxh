@@ -32,7 +32,7 @@ App:
 # JWT配置
 Jwt:
  Issuer: 刘兴洪
- ExpireTime: 700000000
+ ExpireTime: 2592000
  Secret: 寻找实习制作的后端程序
  NotBefore: 1
 #zap日志管理

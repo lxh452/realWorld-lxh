@@ -17,3 +17,7 @@
 {"level":"warn","ts":1747066017.8134286,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
 {"level":"warn","ts":1747066019.3400087,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
 {"level":"warn","ts":1747066045.1788325,"msg":"缓存数据格式错误json: cannot unmarshal array into Go value of type resp.CommentResp","service":"GetCommentFromArticleApi","port":3000}
+{"level":"warn","ts":1747117865.17717,"msg":"注册失败用户已存在","service":"register","port":3000}
+{"level":"warn","ts":1747118678.89034,"msg":"创建文章Error 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`realworld`.`articles`, CONSTRAINT `fk_articles_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`))","service":"CreateArticleApi","port":3000}
+{"level":"warn","ts":1747120019.6906474,"msg":"添加文章到喜欢中Error 1062 (23000): Duplicate entry '33-26' for key 'user_article_faviourite.PRIMARY'","service":"AddArticleIntoFavoriteApi","port":3000}
+{"level":"warn","ts":1747120361.8496218,"msg":"添加文章到喜欢中Error 1062 (23000): Duplicate entry '30-26' for key 'user_article_faviourite.PRIMARY'","service":"AddArticleIntoFavoriteApi","port":3000}

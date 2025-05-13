@@ -35,7 +35,7 @@ func UserLoginApi(c *gin.Context) {
 	//合法性认证
 	//处理业务
 	//todo
-	//userReq.User.Password = middleware.Md5Decode(userReq.User.Password)
+	userReq.User.Password = middleware.Md5Decode(userReq.User.Password)
 	//创建一个实体类
 	userModel := service.UserServiceApp
 	login, err := userModel.Login(userReq.User)
@@ -169,7 +169,6 @@ func GetUserInfoApi(c *gin.Context) {
 }
 
 // 更改用户的个人信息
-// 更改用户的个人信息
 func PutUserInfoApi(c *gin.Context) {
 	// 根据token获取用户信息
 	claims, err := utils.GetClaims(c)
@@ -201,24 +200,16 @@ func PutUserInfoApi(c *gin.Context) {
 	}
 
 	// 检查是否需要重新生成token
-	if needsNewToken(updatedUser, claims) {
-		token, err := generateNewToken(*updatedUser)
-		if err != nil {
-			global.Logger.Warn("更新数据失败", zap.Error(err), zap.String("service", "putuserinfo"), zap.Int("port", global.CONFIG.Server.Port))
-			resp.FailWithMessage("token生成错误", c)
-			return
-		}
-		resp.OkWithData(token, c)
+	token, err := generateNewToken(*updatedUser)
+	if err != nil {
+		global.Logger.Warn("更新数据失败", zap.Error(err), zap.String("service", "putuserinfo"), zap.Int("port", global.CONFIG.Server.Port))
+		resp.FailWithMessage("token生成错误", c)
 		return
 	}
+	updatedUser.User.Token = token
+	resp.OkWithData(updatedUser, c)
+	return
 
-	// 更新成功，无需重新生成token
-	resp.OkWithMessage("更新成功", c)
-}
-
-// 检查是否需要重新生成token
-func needsNewToken(updatedUser *resp.UserResp, claims *model.GoShopClaims) bool {
-	return updatedUser.User.Email != claims.Email || updatedUser.User.Username != claims.Username
 }
 
 // 生成新的token

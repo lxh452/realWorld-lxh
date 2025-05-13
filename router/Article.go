@@ -31,13 +31,9 @@ func (r *ArticleGroup) InitArticleRouters(engine *gin.Engine) {
 
 		//提要文章
 		Article.GET("/feed", api.GetArticleFeedApi)
-	}
 
-	//无需使用中间件
-	Article_NoAuth := engine.Group("/api/articles")
-	{
 		//按条件获取文章
-		Article_NoAuth.GET("", api.GetArticlesApi)
+		Article.GET("", api.GetArticlesApi)
 
 	}
 

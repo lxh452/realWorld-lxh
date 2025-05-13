@@ -11,7 +11,7 @@ type Article struct {
 	ID          uint      `gorm:"primary_key" json:"id"`
 	CreatedAt   time.Time `gorm:"column:created_at" json:"createdAt"`
 	UpdatedAt   time.Time `gorm:"column:updated_at" json:"updatedAt"`
-	Title       string    `gorm:"not_null" json:"title"`
+	Title       string    `gorm:"not_null;unique" json:"title"`
 	Description string    `gorm:"not_null" json:"description"`
 	Body        string    `gorm:"not_null" json:"body"`
 	TagList     []string  `gorm:"type:text;serializer:json" json:"taglist"`

@@ -133,14 +133,14 @@ func AddArticleIntoFavoriteApi(c *gin.Context) {
 		return
 	}
 	faviorite := service.ArticleServiceApp
-	err = faviorite.AddArticleToFaviorite(slug, claims.Id)
+	info, err := faviorite.AddArticleToFaviorite(slug, claims.Id)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
 		//写入日志
 		global.Logger.Warn("添加文章到喜欢中"+err.Error(), zap.String("service", "AddArticleIntoFavoriteApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
-	resp.Ok(c)
+	resp.OkWithData(info, c)
 
 }
 
@@ -153,13 +153,13 @@ func DeleteArticleFromFavoriteApi(c *gin.Context) {
 		return
 	}
 	faviorite := service.ArticleServiceApp
-	err = faviorite.DeleteArticleToFaviorite(slug, claims.Id)
+	info, err := faviorite.DeleteArticleToFaviorite(slug, claims.Id)
 	if err != nil {
 		resp.FailWithMessage(err.Error(), c)
 		//写入日志
 		global.Logger.Warn("删除文章到喜欢中"+err.Error(), zap.String("service", "DeleteArticleFromFavoriteApi"), zap.Int("port", global.CONFIG.Server.Port))
 		return
 	}
-	resp.Ok(c)
+	resp.OkWithData(info, c)
 
 }

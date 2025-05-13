@@ -19,7 +19,7 @@ import (
 func (comment ArticleService) AddCommentToArticle(req req.CommentResp, userId uint, slug string) (*resp.CommentResp, error) {
 	// 1.查询文章ID
 	var articleId uint
-	if err := global.DB.Table("articles").Select("id").Where("title = ?", slug).Scan(&articleId).Error; err != nil {
+	if err := global.DB.Table("articles").Select("id").Where("title = ?", slugToTitle(slug)).Scan(&articleId).Error; err != nil {
 		return &resp.CommentResp{}, err
 	}
 	// 2.创建评论插入到数据库
@@ -36,7 +36,7 @@ func (comment ArticleService) AddCommentToArticle(req req.CommentResp, userId ui
 	}
 	//返回回应结构体
 	fmt.Println(userId)
-	return comment.GetCommentFromArticle(slug, userId)
+	return comment.GetCommentFromArticle(slug, articleId)
 }
 
 // 获取单条评论
@@ -44,11 +44,11 @@ func (comment ArticleService) GetCommentFromArticle(slug string, userId uint) (*
 	var commentData model.Comment
 	var articleId uint
 	//获取文章中作者的id
-	if err := global.DB.Table("articles").Select("author_id").Where("title = ?", slug).Scan(&articleId).Error; err != nil {
+	if err := global.DB.Table("articles").Select("author_id").Where("title = ?", slugToTitle(slug)).Debug().Scan(&articleId).Error; err != nil {
 		return &resp.CommentResp{}, err
 	}
 	//2.根据文章id和评论人的个人id
-	err := global.DB.Table("comments").Where("article_id = ? and author_id = ?", articleId, userId).Scan(&commentData).Error
+	err := global.DB.Table("comments").Where("article_id = ? and author_id = ?", userId, articleId).Debug().Find(&commentData).Error
 	if err != nil {
 		return &resp.CommentResp{}, err
 	}
@@ -61,6 +61,7 @@ func (comment ArticleService) GetCommentFromArticle(slug string, userId uint) (*
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(commentData)
 	commentModel := resp.CommentModel{
 		ID:        commentData.ID,
 		CreatedAt: commentData.CreatedAt,
@@ -75,7 +76,7 @@ func (comment ArticleService) GetCommentFromArticle(slug string, userId uint) (*
 func (comment ArticleService) GetCommentsFromArticle(slug string, userId uint) ([]resp.CommentResp, error) {
 	var comments []model.Comment
 	var articleId uint
-	if err := global.DB.Table("articles").Select("id").Where("title = ?", slug).Scan(&articleId).Error; err != nil {
+	if err := global.DB.Table("articles").Select("id").Where("title = ?", slugToTitle(slug)).Scan(&articleId).Error; err != nil {
 		return nil, err
 	}
 	err := global.DB.Table("comments").Where("article_id = ?", articleId).Find(&comments).Error
@@ -108,7 +109,7 @@ func (comment ArticleService) GetCommentsFromArticle(slug string, userId uint) (
 // DeleteCommentFromArticle 删除评论
 func (comment ArticleService) DeleteCommentFromArticle(slug string, commentId uint, userId uint) error {
 	var articleId uint
-	if err := global.DB.Table("articles").Select("id").Where("title = ?", slug).Scan(&articleId).Error; err != nil {
+	if err := global.DB.Table("articles").Select("id").Where("title = ?", slugToTitle(slug)).Scan(&articleId).Error; err != nil {
 		return err
 	}
 
@@ -124,10 +125,10 @@ func (comment ArticleService) DeleteCommentFromArticle(slug string, commentId ui
 }
 
 // 创建喜欢文章
-func (faviorite ArticleService) AddArticleToFaviorite(slug string, userId uint) error {
+func (faviorite ArticleService) AddArticleToFaviorite(slug string, userId uint) (*resp.ArticleResp, error) {
 	var articleId uint
-	if err := global.DB.Table("articles").Select("id").Where("title = ?", slug).Scan(&articleId).Error; err != nil {
-		return err
+	if err := global.DB.Table("articles").Select("id").Where("title = ?", slugToTitle(slug)).Scan(&articleId).Error; err != nil {
+		return nil, err
 	}
 	relation := &req.Faviorite{
 		UserId:    userId,
@@ -135,24 +136,24 @@ func (faviorite ArticleService) AddArticleToFaviorite(slug string, userId uint) 
 	}
 	err := global.DB.Table("user_article_faviourite").Create(&relation).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return faviorite.GetArticleInfo(slug, userId)
 }
 
 // 删除喜欢文章
-func (faviorite ArticleService) DeleteArticleToFaviorite(slug string, userId uint) error {
+func (faviorite ArticleService) DeleteArticleToFaviorite(slug string, userId uint) (*resp.ArticleResp, error) {
 	var articleId uint
-	if err := global.DB.Table("articles").Select("id").Where("title = ?", slug).Scan(&articleId).Error; err != nil {
-		return err
+	if err := global.DB.Table("articles").Select("id").Where("title = ?", slugToTitle(slug)).Scan(&articleId).Error; err != nil {
+		return nil, err
 	}
 
 	// 明确指定删除条件
 	err := global.DB.Table("user_article_faviourite").Where("user_id = ? AND article_id = ?", userId, articleId).Delete(&req.Faviorite{}).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return faviorite.GetArticleInfo(slug, userId)
 }
 
 // 获取关注用户的文章列表
@@ -192,7 +193,7 @@ func (article *ArticleService) GetFollowedArticles(reqid uint, limit string, off
 		}
 		articleResp := resp.ArticleResp{
 			Article: resp.ArticleModel{
-				Slug:           articleinfo.Title,
+				Slug:           titleToSlug(articleinfo.Title),
 				Title:          articleinfo.Title,
 				Description:    articleinfo.Description,
 				Body:           articleinfo.Body,
